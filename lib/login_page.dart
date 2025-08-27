@@ -4,25 +4,38 @@ import 'database_helper.dart';
 class LoginPage extends StatefulWidget {
   final DatabaseHelper? dbHelper;
 
-  // ignore: use_super_parameters
   const LoginPage({Key? key, this.dbHelper}) : super(key: key);
 
   @override
-  // ignore: library_private_types_in_public_api
   _LoginPageState createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends State<LoginPage>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
   late final DatabaseHelper dbHelper;
+  late AnimationController _animationController;
+  late Animation<double> _fadeInAnimation;
 
   @override
   void initState() {
     super.initState();
-    dbHelper = widget.dbHelper ?? DatabaseHelper(); // fallback if not injected
+    dbHelper = widget.dbHelper ?? DatabaseHelper();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _fadeInAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeIn,
+    );
+
+    _animationController.forward();
   }
 
   void _login() async {
@@ -30,9 +43,9 @@ class _LoginPageState extends State<LoginPage> {
       String username = _usernameController.text.trim();
       String password = _passwordController.text.trim();
 
-      bool success = await dbHelper.login(username, password);
+      bool success = await dbHelper.validateUser(username, password);
 
-      if (!mounted) return; // prevent using context after unmount
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -47,72 +60,132 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200],
-      body: Center(
-        child: Card(
-          elevation: 8,
-          margin: EdgeInsets.symmetric(horizontal: 30),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+      backgroundColor: Colors.black,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF0f0c29), Color(0xFF302b63), Color(0xFF24243e)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(25.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "Login",
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 20),
-                  TextFormField(
-                    controller: _usernameController,
-                    decoration: InputDecoration(
-                      labelText: "Username",
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.person),
-                    ),
-                    validator: (value) => value == null || value.isEmpty
-                        ? 'Enter username'
-                        : null,
-                  ),
-                  SizedBox(height: 15),
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: "Password",
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.lock),
-                    ),
-                    validator: (value) => value == null || value.isEmpty
-                        ? 'Enter password'
-                        : null,
-                  ),
-                  SizedBox(height: 25),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _login,
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Center(
+          child: FadeTransition(
+            opacity: _fadeInAnimation,
+            child: Card(
+              color: const Color(0xFF1e1e2e),
+              elevation: 20,
+              shadowColor: Colors.black87,
+              margin: const EdgeInsets.symmetric(horizontal: 30),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(25.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircleAvatar(
+                        radius: 40,
+                        backgroundColor: Colors.deepPurple,
+                        child: Icon(
+                          Icons.person,
+                          size: 40,
+                          color: Colors.white,
                         ),
-                        backgroundColor: Colors.blue,
                       ),
-                      child: Text("Login", style: TextStyle(fontSize: 16)),
-                    ),
+                      const SizedBox(height: 15),
+                      const Text(
+                        "Welcome Back!",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 25),
+                      TextFormField(
+                        controller: _usernameController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: "Username",
+                          labelStyle: const TextStyle(color: Colors.white70),
+                          prefixIcon: const Icon(
+                            Icons.person,
+                            color: Colors.white70,
+                          ),
+                          filled: true,
+                          fillColor: Colors.black26,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Enter username'
+                            : null,
+                      ),
+                      const SizedBox(height: 15),
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: "Password",
+                          labelStyle: const TextStyle(color: Colors.white70),
+                          prefixIcon: const Icon(
+                            Icons.lock,
+                            color: Colors.white70,
+                          ),
+                          filled: true,
+                          fillColor: Colors.black26,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Enter password'
+                            : null,
+                      ),
+                      const SizedBox(height: 25),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _login,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            backgroundColor: Colors.deepPurple,
+                          ),
+                          child: const Text(
+                            "Login",
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextButton(
+                        onPressed: () {},
+                        child: const Text(
+                          "Forgot Password?",
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),

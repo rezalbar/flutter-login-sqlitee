@@ -1,47 +1,65 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'dart:async';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
 
-  static Database? _db;
+  static Database? _database;
 
-  Future<Database> get db async {
-    if (_db != null) return _db!;
-    _db = await initDb();
-    return _db!;
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    _database = await _initDatabase();
+    return _database!;
   }
 
-  Future<Database> initDb() async {
-    final databasesPath = await getDatabasesPath();
-    final path = join(databasesPath, 'users.db');
-
+  Future<Database> _initDatabase() async {
+    String path = join(await getDatabasesPath(), 'users.db');
     return await openDatabase(path, version: 1, onCreate: _onCreate);
   }
 
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
-      CREATE TABLE users (
+      CREATE TABLE users(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
+        email TEXT UNIQUE,
         password TEXT
       )
     ''');
-
-    // Create a default user
-    await db.insert('users', {'username': 'admin', 'password': 'admin123'});
   }
 
-  Future<bool> login(String username, String password) async {
-    final dbClient = await db;
-    List<Map> result = await dbClient.query(
+  Future<int> insertUser(String email, String password) async {
+    final db = await database;
+    try {
+      return await db.insert('users', {
+        'email': email,
+        'password': password,
+      }, conflictAlgorithm: ConflictAlgorithm.fail);
+    } catch (e) {
+      throw Exception('User already exists');
+    }
+  }
+
+  Future<Map<String, dynamic>?> getUser(String email) async {
+    final db = await database;
+    List<Map<String, dynamic>> results = await db.query(
       'users',
-      where: 'username = ? AND password = ?',
-      whereArgs: [username, password],
+      where: 'email = ?',
+      whereArgs: [email],
+      limit: 1,
     );
-    return result.isNotEmpty;
+    if (results.isNotEmpty) {
+      return results.first;
+    }
+    return null;
+  }
+
+  Future<bool> validateUser(String email, String password) async {
+    final user = await getUser(email);
+    if (user != null && user['password'] == password) {
+      return true;
+    }
+    return false;
   }
 }
