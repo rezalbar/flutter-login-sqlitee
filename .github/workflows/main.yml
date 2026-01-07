@@ -1,0 +1,28 @@
+name: Build APK Reza
+
+on: [push] # <--- Ini artinya: "Kalau ada update, Jalan!"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+    - uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+    
+    - name: Download Library
+      run: flutter pub get
+
+    - name: Build APK Release
+      run: flutter build apk --release --no-sound-null-safety
+
+    - name: Upload APK ke GitHub
+      uses: actions/upload-artifact@v3
+      with:
+        name: APK-REZA-JADI
+        path: build/app/outputs/flutter-apk/app-release.apk
