@@ -1,4 +1,4 @@
-name: Build APK Reza SUKSES
+name: Build APK Debug (Pasti Bisa)
 
 on: [push]
 
@@ -17,10 +17,11 @@ jobs:
           
       - run: flutter pub get
       
-      # PERHATIKAN: Saya sudah hapus tulisan --no-sound-null-safety di sini
-      - run: flutter build apk --release
+      # INI KUNCINYA: Kita ganti release jadi debug
+      - run: flutter build apk --debug
       
       - uses: actions/upload-artifact@v4
         with:
-          name: APK-REZA-SIAP-KUMPUL
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: APK-REZA-DEBUG
+          # Path outputnya juga beda kalau debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
